@@ -5,10 +5,12 @@ from django.db import models
 class User(AbstractUser):
     OWNER  = 'OWNER'
     STAFF  = 'STAFF'
+    VIEWER = 'VIEWER'
 
     ROLE_CHOICES = [
         (OWNER,  'Owner'),
         (STAFF,  'Staff'),
+        (VIEWER, 'Viewer'),
     ]
 
     email = models.EmailField(unique=True)
@@ -28,3 +30,7 @@ class User(AbstractUser):
     @property
     def is_staff_member(self):
         return self.role == self.STAFF
+
+    @property
+    def is_viewer(self):
+        return self.role == self.VIEWER
