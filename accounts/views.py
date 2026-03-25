@@ -25,6 +25,7 @@ class LoginView(APIView):
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response({
+            'success': True,
             'token': token.key,
             'user_id': user.id,
             'username': user.username,
@@ -46,6 +47,7 @@ class CreateStaffView(APIView):
         user = serializer.save()
 
         return Response({
+            'success': True,
             'message': f'Account for "{user.username}" created successfully.',
             'user': {
                 'id': user.id,
@@ -66,7 +68,10 @@ class ListStaffView(APIView):
     def get(self, request):
         staff_users = User.objects.exclude(role=User.OWNER).order_by('username')
         serializer = StaffListSerializer(staff_users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            'success': True,
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class DeactivateStaffView(APIView):
@@ -81,13 +86,13 @@ class DeactivateStaffView(APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response(
-                {'error': 'User not found.'},
+                {'success': False, 'error': 'User not found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         if user.role == User.OWNER:
             return Response(
-                {'error': 'Cannot deactivate an Owner account.'},
+                {'success': False, 'error': 'Cannot deactivate an Owner account.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -95,6 +100,7 @@ class DeactivateStaffView(APIView):
         user.save(update_fields=['is_active'])
 
         return Response({
+            'success': True,
             'message': f'User "{user.username}" has been deactivated.',
             'user': {
                 'id': user.id,
