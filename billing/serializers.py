@@ -1,3 +1,87 @@
 from rest_framework import serializers
+from .models import Invoice, InvoiceItem
+from products.models import Product
+from customers.models import Customer
+from django.db import transaction
+from django.db.models import F
 
-# To be implemented
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceItem
+        fields = ['id', 'product', 'quantity', 'unit_price', 'total_price', 'product_name_snapshot', 'sku_snapshot']
+        read_only_fields = ['total_price', 'product_name_snapshot', 'sku_snapshot']
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    items = InvoiceItemSerializer(many=True)
+    customer_phone = serializers.CharField(write_only=True, required=False)
+    customer_name = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'invoice_number', 'customer', 'customer_phone', 'customer_name',
+            'sub_total', 'tax_amount', 'discount_amount', 'grand_total',
+            'paid_amount', 'due_amount', 'payment_status', 'payment_method',
+            'items', 'created_by', 'created_at'
+        ]
+        read_only_fields = ['invoice_number', 'due_amount', 'payment_status', 'created_by', 'created_at']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        customer_phone = validated_data.pop('customer_phone', None)
+        customer_name = validated_data.pop('customer_name', "New Customer")
+        customer = validated_data.get('customer')
+
+        # Logic for creating/finding customer by phone
+        if not customer and customer_phone:
+            customer, created = Customer.objects.get_or_create(
+                phone=customer_phone,
+                defaults={'name': customer_name}
+            )
+            validated_data['customer'] = customer
+
+        with transaction.atomic():
+            # 1. First, validate stock for all products
+            for item_data in items_data:
+                product = item_data.get('product')
+                quantity = item_data.get('quantity', 1)
+                if product and product.stock_quantity < quantity:
+                    raise serializers.ValidationError(
+                        f"Insufficient stock for product '{product.name}'. Available: {product.stock_quantity}, Requested: {quantity}"
+                    )
+
+            # 2. Create the Invoice
+            invoice = Invoice.objects.create(**validated_data)
+
+            # 3. Create items and update stock
+            for item_data in items_data:
+                product = item_data.get('product')
+                quantity = item_data.get('quantity')
+                
+                # Fetch unit price (use provided or fallback to product current price)
+                unit_price = item_data.get('unit_price')
+                if not unit_price and product:
+                    unit_price = product.selling_price
+                
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=unit_price
+                )
+
+                # Deduct stock from Product
+                if product:
+                    Product.objects.filter(id=product.id).update(
+                        stock_quantity=F('stock_quantity') - quantity
+                    )
+
+            return invoice
+
+    def to_representation(self, instance):
+        """Include the customer details in the output."""
+        representation = super().to_representation(instance)
+        if instance.customer:
+            from customers.serializers import CustomerSerializer
+            representation['customer_details'] = CustomerSerializer(instance.customer).data
+        return representation
