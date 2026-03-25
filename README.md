@@ -1,59 +1,82 @@
-# Billing-Software-API: Vighnaharta Fataka
+# 🕯️ Vighnaharta Fataka: Billing Software API
 
-A clean, modular Django REST Framework backend for firecracker wholesale billing.
+A professional, high-performance REST API built with **Django & Django REST Framework** for the **Vighnaharta Fataka** firecracker wholesale and retail business.
 
-## Tech Stack
-- **Framework**: Django & Django REST Framework
-- **Authentication**: JWT (Simple JWT)
-- **Database**: SQLite (Local), PostgreSQL (Production)
-- **CORS**: django-cors-headers
-- **Environment Management**: django-environ
-- **Reports**: reportlab, pillow
+---
 
-## Project Structure
-- `accounts`: User management & roles (OWNER, STAFF)
-- `products`: Product & inventory management
-- `billing`: Bills & cart management
-- `customers`: Customer records
-- `reports`: Sales reports & dashboards
-- `core`: Shared utilities
+## 🏗️ Architecture & Features
 
-## Setup Instructions
+-   **Modular Architecture**: Clean separation into `accounts`, `products`, `billing`, and `customers`.
+-   **Security**: Role-Based Access Control (**Owner**, **Staff**, **Viewer**) with Token Authentication.
+-   **Inventory**: Unique SKU generation, stock alerts, and firecracker-specific attributes.
+-   **Media**: Support for product image uploads.
+-   **Production Ready**: Configured for **PostgreSQL**, **WhiteNoise**, and **Gunicorn**.
+-   **Documentation**: Ready for frontend integration with clear JSON payloads.
 
-### 1. Clone the repository
+---
+
+## 📊 Project Progress
+
+| Status | Module | Description |
+| :--- | :--- | :--- |
+| ✅ Done | **Authentication** | Token Auth, Role Management (Owner/Staff/Viewer) |
+| ✅ Done | **Inventory** | CRUD, SKU Auto-gen, Search/Filter, Image support |
+| ✅ Done | **Data Seeding** | Custom command to fill 100+ firecracker products |
+| 🚧 In Prog | **Billing** | Invoices, Bill Items, Cart Integration |
+| 📅 Planned | **Customers** | Profiles, Credit Tracking, WhatsApp Integration |
+| 📅 Planned | **Reports** | Daily Sales, Stock Level Alerts, PDF Invoices |
+
+---
+
+## 🛠️ Quick Start (Local Setup)
+
+### 1. Installation
 ```bash
 git clone <repository-url>
 cd Billing-Software-API
-```
-
-### 2. Environment Setup
-Copy the example environment file and update your values:
-```bash
-cp .env.example .env
-```
-
-### 3. Install Dependencies
-```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Run Migrations
+### 2. Configuration
+Copy `.env.example` to `.env` and update your settings.
+
+### 3. Database setup
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 5. Start the Server
+### 4. Seed Data (Optional)
+Fill your local database with 100 firecracker products instantly:
+```bash
+python manage.py seed_products --count 100
+```
+
+### 5. Start Server
 ```bash
 python manage.py runserver
 ```
 
-## API Endpoints
-- **JWT Login**: `/api/token/`
-- **JWT Refresh**: `/api/token/refresh/`
-- **Accounts**: `/api/accounts/`
-- **Products**: `/api/products/`
-- **Billing**: `/api/billing/`
-- **Customers**: `/api/customers/`
-- **Reports**: `/api/reports/`
-- **Core**: `/api/core/`
+---
+
+## 📡 Key Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/login/` | Returns auth token and user role |
+| `GET` | `/api/products/` | List all inventory (Search & Pagination) |
+| `POST` | `/api/products/` | Add new firecracker (Owner Only) |
+| `POST` | `/api/staff/create/` | Set up a new employee account |
+
+---
+
+## 📦 Deployment Guide
+The project is configured for **AWS EC2** and **Railway**. 
+-   **Production Command**: `gunicorn --bind 0.0.0.0:8000 billing_api.wsgi --daemon`
+-   **Static Files**: Auto-handled by WhiteNoise.
+
+---
+
+Built with ❤️ for Vighnaharta Fataka.
