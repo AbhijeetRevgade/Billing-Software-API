@@ -1,6 +1,8 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.authentication import TokenAuthentication
+from core.authentication import QueryParameterTokenAuthentication
 from django.db import transaction
 from django.http import HttpResponse
 from .models import Invoice, InvoiceItem
@@ -18,6 +20,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all().order_by('-created_at')
     serializer_class = InvoiceSerializer
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication, QueryParameterTokenAuthentication]
     
     filterset_fields = ['payment_status', 'payment_method', 'customer']
     search_fields = ['invoice_number', 'customer__name', 'customer__phone']
@@ -93,7 +96,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 str(idx),
                 item.product_name_snapshot,
                 item.sku_snapshot,
-                str(item.quantity),
+                f"{item.quantity} {item.get_unit_display()}",
                 f"{item.unit_price:.2f}",
                 f"{item.total_price:.2f}"
             ])

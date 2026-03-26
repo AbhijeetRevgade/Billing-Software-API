@@ -73,6 +73,12 @@ class InvoiceItem(models.Model):
     product_name_snapshot = models.CharField(max_length=255)
     sku_snapshot = models.CharField(max_length=50)
     
+    UNIT_CHOICES = [
+        ('PIECE', 'Piece'),
+        ('CENT', 'Cent'),
+    ]
+
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='PIECE')
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -83,6 +89,13 @@ class InvoiceItem(models.Model):
             self.sku_snapshot = self.product.sku
         
         # Calculate total price for this item
+        # If 'CENT' is selected, 1 unit means 10 pieces.
+        # But wait, usually the user provides the unit_price specifically for that unit.
+        # If the user says "1 cent means 10 piece", we should decide if the unit_price
+        # is always per piece or if it's per the unit the user picked.
+        # Usually, in a POS, the price changes based on unit.
+        # Let's assume the user provides the price for the SELECTED unit.
+        
         self.total_price = self.unit_price * self.quantity
         super().save(*args, **kwargs)
 

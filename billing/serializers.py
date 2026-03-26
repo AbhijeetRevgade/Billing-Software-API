@@ -8,7 +8,7 @@ from django.db.models import F
 class InvoiceItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvoiceItem
-        fields = ['id', 'product', 'quantity', 'unit_price', 'total_price', 'product_name_snapshot', 'sku_snapshot']
+        fields = ['id', 'product', 'unit', 'quantity', 'unit_price', 'total_price', 'product_name_snapshot', 'sku_snapshot']
         read_only_fields = ['total_price', 'product_name_snapshot', 'sku_snapshot']
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -45,9 +45,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
             for item_data in items_data:
                 product = item_data.get('product')
                 quantity = item_data.get('quantity', 1)
-                if product and product.stock_quantity < quantity:
+                unit = item_data.get('unit', 'PIECE')
+                
+                # Calculate effective quantity in pieces
+                effective_quantity = quantity * 10 if unit == 'CENT' else quantity
+                
+                if product and product.stock_quantity < effective_quantity:
                     raise serializers.ValidationError(
-                        f"Insufficient stock for product '{product.name}'. Available: {product.stock_quantity}, Requested: {quantity}"
+                        f"Insufficient stock for product '{product.name}'. Available: {product.stock_quantity}, Requested: {effective_quantity} pieces"
                     )
 
             # 2. Create the Invoice
@@ -56,24 +61,31 @@ class InvoiceSerializer(serializers.ModelSerializer):
             # 3. Create items and update stock
             for item_data in items_data:
                 product = item_data.get('product')
-                quantity = item_data.get('quantity')
+                quantity = item_data.get('quantity', 1)
+                unit = item_data.get('unit', 'PIECE')
                 
                 # Fetch unit price (use provided or fallback to product current price)
                 unit_price = item_data.get('unit_price')
                 if not unit_price and product:
+                    # Default to current selling price (assumed to be per piece)
+                    # If it's cent, we multiply by 10.
                     unit_price = product.selling_price
+                    if unit == 'CENT':
+                        unit_price = unit_price * 10
                 
                 InvoiceItem.objects.create(
                     invoice=invoice,
                     product=product,
+                    unit=unit,
                     quantity=quantity,
                     unit_price=unit_price
                 )
 
                 # Deduct stock from Product
                 if product:
+                    effective_quantity = quantity * 10 if unit == 'CENT' else quantity
                     Product.objects.filter(id=product.id).update(
-                        stock_quantity=F('stock_quantity') - quantity
+                        stock_quantity=F('stock_quantity') - effective_quantity
                     )
 
             return invoice
