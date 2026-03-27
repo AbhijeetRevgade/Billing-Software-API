@@ -34,7 +34,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
         # Logic for creating/finding customer by phone
         if not customer and customer_phone:
-            customer, created = Customer.objects.get_or_create(
+            customer, created = Customer.objects.update_or_create(
                 phone=customer_phone,
                 defaults={'name': customer_name}
             )
