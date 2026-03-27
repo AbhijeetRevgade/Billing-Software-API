@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ed1c24;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            color: #ed1c24;
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+        }
+        .header p {
+            margin: 5px 0 0;
+            font-size: 10px;
+            color: #666;
+        }
+        .info-section {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+        .info-title {
+            font-weight: bold;
+            color: #ed1c24;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 5px;
+            padding-bottom: 2px;
+            font-size: 12px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .items-table th {
+            background-color: #ed1c24;
+            color: white;
+            text-align: left;
+            padding: 8px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        .items-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .items-table tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+        .totals-section {
+            width: 100%;
+        }
+        .total-row {
+            width: 100%;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .total-label {
+            display: inline-block;
+            width: 150px;
+            text-align: right;
+            padding-right: 15px;
+            font-weight: bold;
+        }
+        .total-value {
+            display: inline-block;
+            width: 70px;
+            text-align: right;
+        }
+        .grand-total {
+            background-color: #ed1c24;
+            color: white;
+            padding: 8px 0;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            font-size: 9px;
+            color: #999;
+        }
+        .status-badge {
+            background: #eee;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-paid { background: #dff0d8; color: #3c763d; }
+        .status-pending { background: #f2dede; color: #a94442; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Vighnaharta Fataka</h1>
+        <p>Premium Firecrackers & Festival Supplies | GSTIN: APPLIED_FOR</p>
+    </div>
+
+    <div class="info-section">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 50%; vertical-align: top;">
+                    <div class="info-title">Invoice Details</div>
+                    <p>
+                        <strong>Number:</strong> {{ invoice.invoice_number }}<br>
+                        <strong>Date:</strong> {{ invoice.created_at|date:"d M Y" }}<br>
+                        <strong>Time:</strong> {{ invoice.created_at|date:"H:i" }}<br>
+                        <strong>Status:</strong> 
+                        <span class="status-badge {% if invoice.payment_status == 'PAID' %}status-paid{% elif invoice.payment_status == 'PENDING' %}status-pending{% endif %}">
+                            {{ invoice.get_payment_status_display }}
+                        </span>
+                    </p>
+                </td>
+                <td style="width: 50%; vertical-align: top;">
+                    <div class="info-title">Bill To</div>
+                    <p>
+                        <strong>Name:</strong> {{ invoice.customer.name|default:"Guest" }}<br>
+                        <strong>Phone:</strong> {{ invoice.customer.phone|default:"N/A" }}<br>
+                        <strong>Address:</strong> {{ invoice.customer.address|default:"-" }}
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 40px;">#</th>
+                <th>Item Description</th>
+                <th>Unit</th>
+                <th style="text-align: right;">Qty</th>
+                <th style="text-align: right;">Price</th>
+                <th style="text-align: right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    <strong>{{ item.product_name_snapshot }}</strong><br>
+                    <small>SKU: {{ item.sku_snapshot }}</small>
+                </td>
+                <td>{{ item.get_unit_display }}</td>
+                <td style="text-align: right;">{{ item.quantity }}</td>
+                <td style="text-align: right;">{{ item.unit_price }}</td>
+                <td style="text-align: right;">{{ item.total_price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals-section">
+        <div style="float: right; width: 250px;">
+            <div class="total-row">
+                <span class="total-label">Sub-Total:</span>
+                <span class="total-value">₹{{ invoice.sub_total }}</span>
+            </div>
+            <div class="total-row">
+                <span class="total-label">Tax:</span>
+                <span class="total-value">₹{{ invoice.tax_amount }}</span>
+            </div>
+            <div class="total-row">
+                <span class="total-label">Discount:</span>
+                <span class="total-value">-₹{{ invoice.discount_amount }}</span>
+            </div>
+            <div class="total-row grand-total">
+                <span class="total-label">Grand Total:</span>
+                <span class="total-value">₹{{ invoice.grand_total }}</span>
+            </div>
+            <div class="total-row" style="margin-top: 5px; color: #666;">
+                <span class="total-label">Paid Amount:</span>
+                <span class="total-value">₹{{ invoice.paid_amount }}</span>
+            </div>
+            <div class="total-row" style="font-weight: bold; color: {% if invoice.due_amount > 0 %}#ed1c24{% else %}#3c763d{% endif %};">
+                <span class="total-label">Balance Due:</span>
+                <span class="total-value">₹{{ invoice.due_amount }}</span>
+            </div>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+
+    <div style="margin-top: 50px;">
+        <div class="info-title">Terms & Conditions</div>
+        <p style="font-size: 9px; color: #666;">
+            1. Goods once sold will not be taken back.<br>
+            2. Thank you for your business!
+        </p>
+    </div>
+
+    <div class="footer">
+        Generated by Vighnaharta Billing System
+    </div>
+</body>
+</html>
