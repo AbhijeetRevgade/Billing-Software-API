@@ -100,4 +100,4 @@ class InvoiceItem(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.product_name_snapshot} (x{self.quantity}) - {self.invoice.invoice_number}"
+        return f"{self.product_name_snapshot} ({self.quantity} {self.get_unit_display()}) - {self.invoice.invoice_number}"
