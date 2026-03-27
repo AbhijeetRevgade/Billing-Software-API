@@ -87,6 +87,54 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         
         return response
 
+    @action(detail=True, methods=['GET'])
+    def print_html(self, request, pk=None):
+        """
+        Produce a printable HTML page of the invoice.
+        Useful for direct printing via the browser (Ctrl+P).
+        """
+        from django.shortcuts import render
+        from django.utils import timezone
+        
+        invoice = self.get_object()
+        context = {
+            'invoice': invoice,
+            'now': timezone.now(),
+            'is_printable': True # Can be used to hide/show buttons or standard site layout
+        }
+        return render(request, 'billing/invoice_print.html', context)
+
+    @action(detail=True, methods=['GET'])
+    def thermal_receipt_pdf(self, request, pk=None):
+        """
+        Produce a PDF optimized for 80mm thermal printers.
+        """
+        from django.template.loader import render_to_string
+        from xhtml2pdf import pisa
+        from django.utils import timezone
+        
+        invoice = self.get_object()
+        context = {
+            'invoice': invoice,
+            'now': timezone.now(),
+        }
+
+        html = render_to_string('billing/thermal_receipt_pdf.html', context)
+        buffer = io.BytesIO()
+        pisa_status = pisa.CreatePDF(html, dest=buffer)
+        
+        if pisa_status.err:
+            return Response({'error': 'PDF generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        pdf = buffer.getvalue()
+        buffer.close()
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="receipt_{invoice.invoice_number}.pdf"'
+        response.write(pdf)
+        
+        return response
+
 class InvoiceItemViewSet(viewsets.ReadOnlyModelViewSet):
     """Mostly for historical lookup or reporting."""
     queryset = InvoiceItem.objects.all().order_by('-invoice__created_at')

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page {
+            size: 80mm 200mm; /* Large height to accommodate many items */
+            margin: 2mm;
+        }
+        body {
+            font-family: 'Courier', monospace; /* Thermal printers love mono fonts */
+            font-size: 10pt;
+            width: 76mm;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+        .center { text-align: center; }
+        .divider { border-top: 1px dashed black; margin: 5px 0; }
+        .item-row { margin-bottom: 2px; }
+        .prices { font-size: 9pt; display: flex; justify-content: space-between; }
+        .total-section { font-weight: bold; font-size: 11pt; margin-top: 5px; }
+        .footer { font-size: 8pt; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <h2 style="margin: 0;">VIGHNAHARTA</h2>
+        <p style="margin: 0; font-size: 8pt;">FIRECRACKERS & FESTIVALS</p>
+        <p style="font-size: 8pt;">GSTIN: APPLIED_FOR</p>
+    </div>
+
+    <div class="divider"></div>
+    
+    <div>
+        <strong>BILL:</strong> {{ invoice.invoice_number }}<br>
+        <strong>DATE:</strong> {{ invoice.created_at|date:"d-m-Y H:i" }}<br>
+        <strong>CUST:</strong> {{ invoice.customer.name|default:"CASH"|upper }}<br>
+        {% if invoice.customer.phone %}<strong>PH:</strong> {{ invoice.customer.phone }}{% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <table style="width: 100%; border-collapse: collapse;">
+        {% for item in invoice.items.all %}
+        <tr>
+            <td colspan="2"><strong>{{ forloop.counter }}. {{ item.product_name_snapshot|upper }}</strong></td>
+        </tr>
+        <tr>
+            <td style="font-size: 8pt;">{{ item.quantity }} {{ item.get_unit_display }} @ {{ item.unit_price }}</td>
+            <td style="text-align: right;">{{ item.total_price }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="divider"></div>
+
+    <table style="width: 100%;">
+        <tr><td>SUB-TOTAL:</td><td style="text-align: right;">{{ invoice.sub_total }}</td></tr>
+        <tr><td>TAX:</td><td style="text-align: right;">{{ invoice.tax_amount }}</td></tr>
+        <tr><td>DISC:</td><td style="text-align: right;">-{{ invoice.discount_amount }}</td></tr>
+        <tr class="total-section"><td>TOTAL:</td><td style="text-align: right;">₹{{ invoice.grand_total }}</td></tr>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="center footer">
+        <p>ITEMS: {{ invoice.items.count }} | PAID: ₹{{ invoice.paid_amount }}</p>
+        <p>STATUS: {{ invoice.payment_status }}</p>
+        <p style="font-weight: bold;">THANK YOU! VISIT AGAIN</p>
+    </div>
+</body>
+</html>
