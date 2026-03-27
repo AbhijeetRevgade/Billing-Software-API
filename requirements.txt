@@ -8,4 +8,3 @@ reportlab
 gunicorn
 dj-database-url
 whitenoise
-xhtml2pdf
